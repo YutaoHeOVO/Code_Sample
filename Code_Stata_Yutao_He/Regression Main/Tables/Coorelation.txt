@@ -1,0 +1,21 @@
+	(1)	(2)	(3)	(4)	(5)	(6)
+	Gold_Corr	Gold_Corr_AR	Gold_Corr_SP	Oil_Corr	Oil_Corr_AR	Oil_Corr_SP
+VARIABLES	difference_GS	difference_GS	difference_GS	difference_OS	difference_OS	difference_OS
+						
+ret_gold_vol	0.000931**	0.000928**	0.000631			
+	(0.000388)	(0.000389)	(0.000479)			
+ret_sp_vol			0.000427			0.000309
+			(0.000404)			(0.000599)
+L.difference_GS		0.00455	0.00427			
+		(0.0152)	(0.0152)			
+ret_oil_vol				0.000336	0.000321	0.000217
+				(0.000314)	(0.000314)	(0.000373)
+L.difference_OS					0.0306**	0.0305**
+					(0.0152)	(0.0152)
+Constant	0.00837***	0.00833***	0.00816***	0.0140***	0.0136***	0.0135***
+	(0.000545)	(0.000560)	(0.000583)	(0.000964)	(0.000985)	(0.00101)
+						
+Observations	4,320	4,319	4,319	4,320	4,319	4,319
+R-squared	0.001	0.001	0.002	0.000	0.001	0.001
+Standard errors in parentheses						
+*** p<0.01, ** p<0.05, * p<0.1						

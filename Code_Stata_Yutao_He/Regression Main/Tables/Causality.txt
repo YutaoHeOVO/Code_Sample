@@ -1,0 +1,14 @@
+	(1)	(2)	(3)
+VARIABLES	GS_dln_gold_dln_sp	OS_dln_oil_dln_sp	VS_dln_VIX_dln_sp
+			
+1.recession	-0.0991***	0.0836***	-0.0594***
+	(0.00754)	(0.00969)	(0.00378)
+1.post	0.0146***	0.301***	-0.0370***
+	(0.00425)	(0.00546)	(0.00213)
+Constant	-0.0259***	0.0133***	-0.761***
+	(0.00341)	(0.00438)	(0.00171)
+			
+Observations	4,321	4,321	4,321
+R-squared	0.055	0.424	0.086
+Standard errors in parentheses			
+*** p<0.01, ** p<0.05, * p<0.1			

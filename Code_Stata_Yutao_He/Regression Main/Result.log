@@ -1,0 +1,2312 @@
+---------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\yutao\OneDrive\Desktop\Code_Sample_Yutao\Regression Main\Re
+> sult.log
+  log type:  text
+ opened on:   9 May 2024, 03:08:27
+
+. 
+. //Make sure we are in the right directory.
+. use Dataset
+
+. 
+. outreg2 using Summaries,sum(log) tex replace drop(Date)
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+        Date |      4,343    18622.67     1896.19      15341      21913
+         CPI |      4,343    2.071163    1.258806   -1.95876    5.49751
+         WTI |      4,343    65.62041    24.97049      18.02     145.31
+        Gold |      4,343    1007.284    431.1741      276.5       1895
+          M2 |      4,343    5.995405     1.82059    1.28252   10.57546
+-------------+---------------------------------------------------------
+       SP500 |      4,343    1602.776    607.7159     676.53    3240.02
+    Treasury |      4,343    1.303196    1.475877       -.02       5.05
+Unemployment |      4,343    6.050863    1.817708        3.5         10
+     USINDEX |      4,343    111.3416    10.45743    93.6831   131.8808
+         VIX |      4,343    18.93074    8.643671       9.14      80.86
+-------------+---------------------------------------------------------
+           K |      4,343    40538.67     1896.19      37257      43829
+
+
+Summaries.tex
+dir : seeout
+
+. 
+. //To avoid the presence of gaps causing the regression not able to be done, we 
+> use ticks as the time.
+. gen tick = _n
+
+. tsset tick
+
+Time variable: tick, 1 to 4343
+        Delta: 1 unit
+
+. 
+. //Generate variables just in case.
+. gen ln_gold = log(Gold)
+
+. gen ln_sp = log(SP500)
+
+. gen ln_oil = log(WTI)
+
+. gen ln_VIX = log(VIX)
+
+. rename K DateNum
+
+. replace DateNum = Date
+(4,343 real changes made)
+
+. //For financial market, the weekend is closed. So I select 21 days (around) 4 w
+> eeks to denote the monthly return.
+. gen dDate = DateNum-l21.DateNum
+(21 missing values generated)
+
+. 
+. //Generate the first order differences to show the changes in percentages.
+. //Generate the result and times 30 to "normalize" it into 30-day return.
+. gen dln_gold = (ln_gold-l21.ln_gold)/dDate*30
+(21 missing values generated)
+
+. gen dln_sp = (ln_sp-l21.ln_sp)/dDate*30
+(21 missing values generated)
+
+. gen dln_oil = (ln_oil-l21.ln_oil)/dDate*30
+(21 missing values generated)
+
+. gen dln_VIX = (ln_VIX-l21.ln_VIX)/dDate*30
+(21 missing values generated)
+
+. 
+. //Generate differences just in case.
+. gen dTreasury = (Treasury-l21.Treasury)/dDate*30
+(21 missing values generated)
+
+. gen ln_USINDEX = log(USINDEX)
+
+. gen dln_USINDEX = (ln_USINDEX-l21.ln_USINDEX)/dDate*30
+(21 missing values generated)
+
+. 
+. //For first 21 entries, we don't have result.
+. drop if tick<21
+(20 observations deleted)
+
+. 
+. //Generate dummys for recession.
+. //Recession dates according to NBER business cycle.
+. gen recession = 0
+
+. replace recession=1 if DateNum > 17503.5 & DateNum < 18050.5
+(362 real changes made)
+
+. //Here Recession is for creating a gray area for graphs.
+. gen Recession = 2000
+
+. gen EuroCrisis = 0
+
+. //Generate dummys for euro crisis.
+. gen euro = 0
+
+. replace euro = 1 if DateNum > 18383.5 & DateNum < 19355.5
+(645 real changes made)
+
+. 
+. //Visualization
+. //Visualize the price directly.
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line Gold Date
+> ),name(g1,replace) nodraw)
+
+. replace Recession = 4000
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line SP500 Dat
+> e),name(g2,replace) nodraw)
+
+. replace Recession = 160
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line WTI Date)
+> ,name(g3,replace) nodraw)
+
+. graph combine g1 g2 g3, col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs1.png,height (1200) replace
+(file Graphs1.png not found)
+file Graphs1.png saved as PNG format
+
+. //Export the graph as Graph1.png
+. 
+. //Visualize the change in returns.
+. replace Recession = 0.3
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.25))(line dln_g
+> old Date),name(g1,replace) nodraw)
+
+. replace Recession = 0.4
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.4))(line dln_sp
+>  Date),name(g2,replace) nodraw)
+
+. replace Recession = 0.5
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.75))(line dln_o
+> il Date),name(g3,replace) nodraw)
+
+. graph combine g1 g2 g3, col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs2.png,height (1200) replace 
+(file Graphs2.png not found)
+file Graphs2.png saved as PNG format
+
+. //Export the graph as Graph2.png
+. 
+. //Visualize the control variables.
+. replace Recession = 6
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.1))(line Treasu
+> ry Date),name(g1,replace) nodraw)
+
+. replace Recession = 140
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(90))(line USINDEX 
+> Date),name(g2,replace) nodraw)
+
+. replace Recession = 12
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(3))(line Unemploym
+> ent Date),name(g3,replace) nodraw)
+
+. replace Recession = 12
+(0 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line M2 Date),
+> name(g4,replace) nodraw)
+
+. replace Recession = 6
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-2))(line CPI Date
+> ),name(g5,replace) nodraw)
+
+. graph combine g1 g2 g3 g4 g5, col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs3.png,height (1200) replace
+(file Graphs3.png not found)
+file Graphs3.png saved as PNG format
+
+. //Export the graph as Graph3.png
+. 
+. //Test if the variables are stationary
+. //The daily returns of S&P 500
+. kpss dln_sp
+ 
+KPSS test for dln_sp
+ 
+Maxlag = 30 chosen by Schwert criterion
+Autocovariances weighted by Bartlett kernel
+ 
+Critical values for H0: dln_sp is trend stationary
+ 
+10%: 0.119  5% : 0.146  2.5%: 0.176  1% : 0.216
+ 
+Lag order    Test statistic
+    0           .877
+    1           .453
+    2            .31
+    3           .237
+    4           .194
+    5           .165
+    6           .144
+    7           .129
+    8           .117
+    9           .107
+   10          .0996
+   11          .0932
+   12          .0878
+   13          .0833
+   14          .0794
+   15          .0761
+   16          .0732
+   17          .0707
+   18          .0686
+   19          .0667
+   20          .0651
+   21          .0637
+   22          .0625
+   23          .0614
+   24          .0604
+   25          .0596
+   26          .0588
+   27          .0581
+   28          .0575
+   29          .0569
+   30          .0564
+
+. dfgls dln_sp
+
+DF-GLS test for unit root                Number of obs = 4,291
+Variable: dln_sp
+Lag selection: Schwert criterion         Maximum lag   =    30
+
+                             -------- Critical value ---------
+ [lags]      DF-GLS tau           1%           5%          10%
+--------------------------------------------------------------
+     30          -9.254       -3.480       -2.833       -2.546
+     29          -9.099       -3.480       -2.834       -2.547
+     28          -8.822       -3.480       -2.834       -2.547
+     27          -8.623       -3.480       -2.834       -2.547
+     26          -8.259       -3.480       -2.835       -2.547
+     25          -8.354       -3.480       -2.835       -2.548
+     24          -8.785       -3.480       -2.835       -2.548
+     23          -8.299       -3.480       -2.836       -2.548
+     22          -8.736       -3.480       -2.836       -2.549
+     21          -8.896       -3.480       -2.836       -2.549
+     20         -14.112       -3.480       -2.837       -2.549
+     19         -13.564       -3.480       -2.837       -2.549
+     18         -13.047       -3.480       -2.837       -2.550
+     17         -13.581       -3.480       -2.838       -2.550
+     16         -13.370       -3.480       -2.838       -2.550
+     15         -12.173       -3.480       -2.838       -2.551
+     14         -11.879       -3.480       -2.838       -2.551
+     13         -12.323       -3.480       -2.839       -2.551
+     12         -12.132       -3.480       -2.839       -2.551
+     11         -12.003       -3.480       -2.839       -2.552
+     10         -11.604       -3.480       -2.840       -2.552
+      9         -11.270       -3.480       -2.840       -2.552
+      8         -10.919       -3.480       -2.840       -2.553
+      7         -10.660       -3.480       -2.841       -2.553
+      6         -10.579       -3.480       -2.841       -2.553
+      5         -10.691       -3.480       -2.841       -2.553
+      4         -11.538       -3.480       -2.842       -2.554
+      3         -11.322       -3.480       -2.842       -2.554
+      2         -10.825       -3.480       -2.842       -2.554
+      1         -11.174       -3.480       -2.842       -2.554
+--------------------------------------------------------------
+Opt lag (Ng–Perron seq t) = 30 with RMSE = .0137243
+Min SIC  = -8.520782 at lag 24 with RMSE =  .013777
+Min MAIC = -8.489903 at lag 25 with RMSE = .0137652
+
+. dfuller dln_sp
+
+Dickey–Fuller test for unit root        Number of obs  = 4,321
+Variable: dln_sp                        Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)           -11.933       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+. //The daily returns of Gold
+. kpss dln_gold
+ 
+KPSS test for dln_gold
+ 
+Maxlag = 30 chosen by Schwert criterion
+Autocovariances weighted by Bartlett kernel
+ 
+Critical values for H0: dln_gold is trend stationary
+ 
+10%: 0.119  5% : 0.146  2.5%: 0.176  1% : 0.216
+ 
+Lag order    Test statistic
+    0           1.17
+    1             .6
+    2           .409
+    3           .313
+    4           .256
+    5           .218
+    6           .191
+    7           .171
+    8           .155
+    9           .143
+   10           .133
+   11           .125
+   12           .118
+   13           .112
+   14           .107
+   15           .103
+   16          .0996
+   17          .0966
+   18          .0941
+   19          .0919
+   20          .0901
+   21          .0887
+   22          .0875
+   23          .0865
+   24          .0857
+   25           .085
+   26          .0845
+   27          .0841
+   28          .0838
+   29          .0836
+   30          .0835
+
+. dfgls dln_gold
+
+DF-GLS test for unit root                Number of obs = 4,291
+Variable: dln_gold
+Lag selection: Schwert criterion         Maximum lag   =    30
+
+                             -------- Critical value ---------
+ [lags]      DF-GLS tau           1%           5%          10%
+--------------------------------------------------------------
+     30         -10.157       -3.480       -2.833       -2.546
+     29          -9.801       -3.480       -2.834       -2.547
+     28          -9.721       -3.480       -2.834       -2.547
+     27          -9.770       -3.480       -2.834       -2.547
+     26          -9.801       -3.480       -2.835       -2.547
+     25          -9.627       -3.480       -2.835       -2.548
+     24          -9.655       -3.480       -2.835       -2.548
+     23          -9.904       -3.480       -2.836       -2.548
+     22         -10.288       -3.480       -2.836       -2.549
+     21         -10.196       -3.480       -2.836       -2.549
+     20         -17.067       -3.480       -2.837       -2.549
+     19         -16.617       -3.480       -2.837       -2.549
+     18         -15.895       -3.480       -2.837       -2.550
+     17         -15.210       -3.480       -2.838       -2.550
+     16         -15.437       -3.480       -2.838       -2.550
+     15         -14.592       -3.480       -2.838       -2.551
+     14         -13.657       -3.480       -2.838       -2.551
+     13         -13.350       -3.480       -2.839       -2.551
+     12         -12.929       -3.480       -2.839       -2.551
+     11         -12.711       -3.480       -2.839       -2.552
+     10         -12.966       -3.480       -2.840       -2.552
+      9         -12.576       -3.480       -2.840       -2.552
+      8         -12.112       -3.480       -2.840       -2.553
+      7         -12.041       -3.480       -2.841       -2.553
+      6         -11.990       -3.480       -2.841       -2.553
+      5         -12.234       -3.480       -2.841       -2.553
+      4         -11.985       -3.480       -2.842       -2.554
+      3         -11.358       -3.480       -2.842       -2.554
+      2         -11.193       -3.480       -2.842       -2.554
+      1         -11.070       -3.480       -2.842       -2.554
+--------------------------------------------------------------
+Opt lag (Ng–Perron seq t) = 30 with RMSE = .0133912
+Min SIC  =  -8.57856 at lag 21 with RMSE = .0134239
+Min MAIC = -8.501181 at lag 24 with RMSE = .0134151
+
+. dfuller dln_gold
+
+Dickey–Fuller test for unit root        Number of obs  = 4,321
+Variable: dln_gold                      Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)           -10.903       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+. //The daily returns of Crude Oil
+. kpss dln_oil
+ 
+KPSS test for dln_oil
+ 
+Maxlag = 30 chosen by Schwert criterion
+Autocovariances weighted by Bartlett kernel
+ 
+Critical values for H0: dln_oil is trend stationary
+ 
+10%: 0.119  5% : 0.146  2.5%: 0.176  1% : 0.216
+ 
+Lag order    Test statistic
+    0           .888
+    1           .456
+    2           .311
+    3           .237
+    4           .193
+    5           .164
+    6           .143
+    7           .128
+    8           .116
+    9           .106
+   10          .0979
+   11          .0914
+   12          .0859
+   13          .0812
+   14          .0772
+   15          .0737
+   16          .0707
+   17          .0681
+   18          .0658
+   19          .0638
+   20           .062
+   21          .0604
+   22           .059
+   23          .0578
+   24          .0566
+   25          .0556
+   26          .0546
+   27          .0537
+   28          .0529
+   29          .0522
+   30          .0514
+
+. dfgls dln_oil
+
+DF-GLS test for unit root                Number of obs = 4,291
+Variable: dln_oil
+Lag selection: Schwert criterion         Maximum lag   =    30
+
+                             -------- Critical value ---------
+ [lags]      DF-GLS tau           1%           5%          10%
+--------------------------------------------------------------
+     30          -7.660       -3.480       -2.833       -2.546
+     29          -7.370       -3.480       -2.834       -2.547
+     28          -7.460       -3.480       -2.834       -2.547
+     27          -7.538       -3.480       -2.834       -2.547
+     26          -7.755       -3.480       -2.835       -2.547
+     25          -7.645       -3.480       -2.835       -2.548
+     24          -7.641       -3.480       -2.835       -2.548
+     23          -7.550       -3.480       -2.836       -2.548
+     22          -7.559       -3.480       -2.836       -2.549
+     21          -7.647       -3.480       -2.836       -2.549
+     20         -12.858       -3.480       -2.837       -2.549
+     19         -12.281       -3.480       -2.837       -2.549
+     18         -12.027       -3.480       -2.837       -2.550
+     17         -11.872       -3.480       -2.838       -2.550
+     16         -12.105       -3.480       -2.838       -2.550
+     15         -12.029       -3.480       -2.838       -2.551
+     14         -11.697       -3.480       -2.838       -2.551
+     13         -11.677       -3.480       -2.839       -2.551
+     12         -10.971       -3.480       -2.839       -2.551
+     11         -10.478       -3.480       -2.839       -2.552
+     10         -10.279       -3.480       -2.840       -2.552
+      9         -10.118       -3.480       -2.840       -2.552
+      8         -10.042       -3.480       -2.840       -2.553
+      7         -10.311       -3.480       -2.841       -2.553
+      6         -10.348       -3.480       -2.841       -2.553
+      5         -10.481       -3.480       -2.841       -2.553
+      4         -10.652       -3.480       -2.842       -2.554
+      3         -10.381       -3.480       -2.842       -2.554
+      2         -10.361       -3.480       -2.842       -2.554
+      1         -10.280       -3.480       -2.842       -2.554
+--------------------------------------------------------------
+Opt lag (Ng–Perron seq t) = 30 with RMSE = .0282631
+Min SIC  = -7.086019 at lag 21 with RMSE = .0283125
+Min MAIC = -7.070171 at lag 22 with RMSE = .0283121
+
+. dfuller dln_oil
+
+Dickey–Fuller test for unit root        Number of obs  = 4,321
+Variable: dln_oil                       Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)           -11.043       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+. //Test the stationarity of control variables.
+. dfuller dTreasury
+
+Dickey–Fuller test for unit root        Number of obs  = 4,321
+Variable: dTreasury                     Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)           -11.740       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+. dfuller dln_USINDEX
+
+Dickey–Fuller test for unit root        Number of obs  = 4,321
+Variable: dln_USINDEX                   Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -9.636       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+. dfuller Unemployment
+
+Dickey–Fuller test for unit root        Number of obs  = 4,322
+Variable: Unemployment                  Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)             0.038       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.9615.
+
+. dfuller M2
+
+Dickey–Fuller test for unit root        Number of obs  = 4,322
+Variable: M2                            Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -3.438       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0097.
+
+. dfuller CPI
+
+Dickey–Fuller test for unit root        Number of obs  = 4,322
+Variable: CPI                           Number of lags =     0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -2.708       -3.430       -2.860       -2.570
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0727.
+
+. 
+. //Visualize the stationary control variables data.
+. replace Recession = 1
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-2))(line dTreasur
+> y Date),name(g1,replace) nodraw)
+
+. replace Recession = 0.1
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.05))(line dln_U
+> SINDEX Date),name(g2,replace) nodraw)
+
+. replace Recession = 12
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(3))(line Unemploym
+> ent Date),name(g3,replace) nodraw)
+
+. replace Recession = 12
+(0 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line M2 Date),
+> name(g4,replace) nodraw)
+
+. replace Recession = 6
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-2))(line CPI Date
+> ),name(g5,replace) nodraw)
+
+. graph combine g1 g2 g3 g4 g5, col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs4.png,height (1200) replace
+(file Graphs4.png not found)
+file Graphs4.png saved as PNG format
+
+. 
+. //Test if ARCH effect exists before we run the ARCH regression.
+. reg dln_sp dTreasury dln_USINDEX CPI Unemployment M2
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(5, 4316)      =    312.98
+       Model |  2.23671629         5  .447343258   Prob > F        =    0.0000
+    Residual |  6.16882119     4,316  .001429291   R-squared       =    0.2661
+-------------+----------------------------------   Adj R-squared   =    0.2653
+       Total |  8.40553748     4,321  .001945276   Root MSE        =    .03781
+
+------------------------------------------------------------------------------
+      dln_sp | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   dTreasury |   .0489123   .0031794    15.38   0.000     .0426791    .0551456
+ dln_USINDEX |  -1.340865   .0387522   -34.60   0.000     -1.41684   -1.264891
+         CPI |  -.0047067   .0004777    -9.85   0.000    -.0056433   -.0037701
+Unemployment |  -.0000429   .0003326    -0.13   0.897     -.000695    .0006092
+          M2 |  -.0004412   .0003354    -1.32   0.188    -.0010988    .0002164
+       _cons |   .0174814   .0030557     5.72   0.000     .0114907    .0234721
+------------------------------------------------------------------------------
+
+. est store StockRet
+
+. archlm,lags(1)
+LM test for autoregressive conditional heteroskedasticity (ARCH)
+---------------------------------------------------------------------------
+    lags(p)  |          chi2               df                 Prob > chi2
+-------------+-------------------------------------------------------------
+       1     |       3121.066               1                   0.0000
+---------------------------------------------------------------------------
+         H0: no ARCH effects      vs.  H1: ARCH(p) disturbance
+
+. reg dln_gold dTreasury dln_USINDEX CPI Unemployment M2
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(5, 4316)      =    240.16
+       Model |  2.13323106         5  .426646212   Prob > F        =    0.0000
+    Residual |  7.66755836     4,316  .001776543   R-squared       =    0.2177
+-------------+----------------------------------   Adj R-squared   =    0.2168
+       Total |  9.80078942     4,321  .002268176   Root MSE        =    .04215
+
+------------------------------------------------------------------------------
+    dln_gold | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   dTreasury |   -.025891   .0035446    -7.30   0.000    -.0328403   -.0189417
+ dln_USINDEX |  -1.447925    .043204   -33.51   0.000    -1.532627   -1.363223
+         CPI |   .0014253   .0005326     2.68   0.007     .0003811    .0024695
+Unemployment |   .0006247   .0003708     1.68   0.092    -.0001024    .0013517
+          M2 |  -.0009739    .000374    -2.60   0.009    -.0017071   -.0002407
+       _cons |   .0064277   .0034067     1.89   0.059    -.0002512    .0131066
+------------------------------------------------------------------------------
+
+. est store GoldRet
+
+. archlm,lags(1)
+LM test for autoregressive conditional heteroskedasticity (ARCH)
+---------------------------------------------------------------------------
+    lags(p)  |          chi2               df                 Prob > chi2
+-------------+-------------------------------------------------------------
+       1     |       3165.457               1                   0.0000
+---------------------------------------------------------------------------
+         H0: no ARCH effects      vs.  H1: ARCH(p) disturbance
+
+. reg dln_oil dTreasury dln_USINDEX CPI Unemployment M2
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(5, 4316)      =    203.28
+       Model |  8.13254726         5  1.62650945   Prob > F        =    0.0000
+    Residual |  34.5345627     4,316  .008001521   R-squared       =    0.1906
+-------------+----------------------------------   Adj R-squared   =    0.1897
+       Total |    42.66711     4,321   .00987436   Root MSE        =    .08945
+
+------------------------------------------------------------------------------
+     dln_oil | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   dTreasury |   .0571209   .0075226     7.59   0.000     .0423726    .0718691
+ dln_USINDEX |  -2.840115   .0916901   -30.98   0.000    -3.019874   -2.660355
+         CPI |    .003228   .0011304     2.86   0.004     .0010119    .0054441
+Unemployment |   .0000699    .000787     0.09   0.929    -.0014731    .0016129
+          M2 |   .0008494   .0007937     1.07   0.285    -.0007066    .0024054
+       _cons |  -.0065437   .0072299    -0.91   0.365     -.020718    .0076307
+------------------------------------------------------------------------------
+
+. est store OilRet
+
+. archlm,lags(1)
+LM test for autoregressive conditional heteroskedasticity (ARCH)
+---------------------------------------------------------------------------
+    lags(p)  |          chi2               df                 Prob > chi2
+-------------+-------------------------------------------------------------
+       1     |       3276.137               1                   0.0000
+---------------------------------------------------------------------------
+         H0: no ARCH effects      vs.  H1: ARCH(p) disturbance
+
+. outreg2 [StockRet GoldRet OilRet] using LinearRet,tex replace
+LinearRet.tex
+dir : seeout
+
+. 
+. //Run the autoregression model for returns.
+. arch dln_sp dTreasury dln_USINDEX M2,ar(1 2 3)
+
+(setting optimization to BHHH)
+Iteration 0:  Log likelihood =  11961.337  
+Iteration 1:  Log likelihood =  12058.222  
+Iteration 2:  Log likelihood =  12074.826  
+Iteration 3:  Log likelihood =  12077.397  
+Iteration 4:  Log likelihood =  12077.921  
+(switching optimization to BFGS)
+Iteration 5:  Log likelihood =  12078.121  
+Iteration 6:  Log likelihood =   12078.29  
+Iteration 7:  Log likelihood =  12078.293  
+Iteration 8:  Log likelihood =  12078.293  
+Iteration 9:  Log likelihood =  12078.293  
+Iteration 10: Log likelihood =  12078.293  
+
+Time-series regression -- AR disturbances
+
+Sample: 22 thru 4343                            Number of obs     =       4322
+                                                Wald chi2(6)      =   82457.36
+Log likelihood = 12078.29                       Prob > chi2       =     0.0000
+
+------------------------------------------------------------------------------
+             |                 OPG
+      dln_sp | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+dln_sp       |
+   dTreasury |   .0335076   .0020711    16.18   0.000     .0294483    .0375669
+ dln_USINDEX |  -.9584992    .039535   -24.24   0.000    -1.035986    -.881012
+          M2 |   .0005969   .0008041     0.74   0.458     -.000979    .0021729
+       _cons |   .0007255    .006669     0.11   0.913    -.0123456    .0137965
+-------------+----------------------------------------------------------------
+ARMA         |
+          ar |
+         L1. |    .833507   .0085716    97.24   0.000      .816707     .850307
+         L2. |   .0766649   .0110726     6.92   0.000      .054963    .0983668
+         L3. |    .022349   .0088822     2.52   0.012     .0049402    .0397579
+-------------+----------------------------------------------------------------
+     /SIGMA2 |   .0002189   2.49e-06    87.86   0.000      .000214    .0002237
+------------------------------------------------------------------------------
+
+. est store AR_Stock
+
+. predict ret_sp_error,resid
+(1 missing value generated)
+
+. arch ret_sp_error,arch(1) garch(1)
+
+(setting optimization to BHHH)
+Iteration 0:  Log likelihood =  12641.862  
+Iteration 1:  Log likelihood =   12856.15  
+Iteration 2:  Log likelihood =  12941.737  
+Iteration 3:  Log likelihood =  12957.293  
+Iteration 4:  Log likelihood =  12957.452  
+(switching optimization to BFGS)
+BFGS stepping has contracted, resetting BFGS Hessian (0)
+Iteration 5:  Log likelihood =  12957.456  
+Iteration 6:  Log likelihood =  12957.456  (backed up)
+Iteration 7:  Log likelihood =  12957.456  (backed up)
+Iteration 8:  Log likelihood =  12957.456  (backed up)
+Iteration 9:  Log likelihood =  12957.456  (backed up)
+Iteration 10: Log likelihood =  12957.456  
+
+ARCH family regression
+
+Sample: 22 thru 4343                            Number of obs     =       4322
+                                                Wald chi2(.)      =          .
+Log likelihood = 12957.46                       Prob > chi2       =          .
+
+------------------------------------------------------------------------------
+             |                 OPG
+ret_sp_error | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ret_sp_error |
+       _cons |   .0002452    .000167     1.47   0.142     -.000082    .0005725
+-------------+----------------------------------------------------------------
+ARCH         |
+        arch |
+         L1. |   .0668744   .0053595    12.48   0.000       .05637    .0773788
+             |
+       garch |
+         L1. |   .9205905    .006511   141.39   0.000     .9078293    .9333518
+             |
+       _cons |   2.05e-06   3.14e-07     6.54   0.000     1.44e-06    2.67e-06
+------------------------------------------------------------------------------
+
+. est store GARCH_Stock
+
+. predict ret_sp_vol,variance
+
+. 
+. arch dln_gold dTreasury dln_USINDEX M2,ar(1)
+
+(setting optimization to BHHH)
+Iteration 0:  Log likelihood =  12235.869  
+Iteration 1:  Log likelihood =   12334.33  
+Iteration 2:  Log likelihood =   12340.48  
+Iteration 3:  Log likelihood =  12342.213  
+Iteration 4:  Log likelihood =  12342.898  
+(switching optimization to BFGS)
+Iteration 5:  Log likelihood =  12343.204  
+Iteration 6:  Log likelihood =  12343.456  
+Iteration 7:  Log likelihood =  12343.476  
+Iteration 8:  Log likelihood =  12343.479  
+Iteration 9:  Log likelihood =  12343.479  
+Iteration 10: Log likelihood =  12343.479  
+Iteration 11: Log likelihood =  12343.479  
+Iteration 12: Log likelihood =  12343.479  
+
+Time-series regression -- AR disturbances
+
+Sample: 22 thru 4343                            Number of obs     =       4322
+                                                Wald chi2(4)      =   90947.19
+Log likelihood = 12343.48                       Prob > chi2       =     0.0000
+
+------------------------------------------------------------------------------
+             |                 OPG
+    dln_gold | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+dln_gold     |
+   dTreasury |  -.0170716   .0017768    -9.61   0.000     -.020554   -.0135892
+ dln_USINDEX |  -1.517219   .0337072   -45.01   0.000    -1.583284   -1.451154
+          M2 |  -.0007261   .0009501    -0.76   0.445    -.0025883     .001136
+       _cons |   .0142987   .0080143     1.78   0.074    -.0014091    .0300064
+-------------+----------------------------------------------------------------
+ARMA         |
+          ar |
+         L1. |   .9443252   .0031654   298.33   0.000     .9381211    .9505292
+-------------+----------------------------------------------------------------
+     /SIGMA2 |   .0001936   2.31e-06    83.73   0.000     .0001891    .0001981
+------------------------------------------------------------------------------
+
+. est store AR_Gold
+
+. predict ret_gold_error,resid
+(1 missing value generated)
+
+. arch ret_gold_error,arch(1) garch(1)
+
+(setting optimization to BHHH)
+Iteration 0:  Log likelihood =  12554.239  
+Iteration 1:  Log likelihood =  12730.847  
+Iteration 2:  Log likelihood =  12895.558  
+Iteration 3:  Log likelihood =  12921.788  
+Iteration 4:  Log likelihood =  12926.313  
+(switching optimization to BFGS)
+Iteration 5:  Log likelihood =  12926.454  
+Iteration 6:  Log likelihood =  12926.463  
+BFGS stepping has contracted, resetting BFGS Hessian (0)
+Iteration 7:  Log likelihood =  12926.464  
+Iteration 8:  Log likelihood =  12926.464  (backed up)
+Iteration 9:  Log likelihood =  12926.464  (backed up)
+Iteration 10: Log likelihood =  12926.464  (backed up)
+Iteration 11: Log likelihood =  12926.464  (backed up)
+BFGS stepping has contracted, resetting BFGS Hessian (1)
+Iteration 12: Log likelihood =  12926.464  
+Iteration 13: Log likelihood =  12926.464  
+
+ARCH family regression
+
+Sample: 22 thru 4343                            Number of obs     =       4322
+                                                Wald chi2(.)      =          .
+Log likelihood = 12926.46                       Prob > chi2       =          .
+
+--------------------------------------------------------------------------------
+               |                 OPG
+ret_gold_error | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+---------------+----------------------------------------------------------------
+ret_gold_error |
+         _cons |  -.0001462     .00016    -0.91   0.361    -.0004598    .0001673
+---------------+----------------------------------------------------------------
+ARCH           |
+          arch |
+           L1. |   .0595532   .0044749    13.31   0.000     .0507825     .068324
+               |
+         garch |
+           L1. |   .9364547   .0047588   196.78   0.000     .9271276    .9457818
+               |
+         _cons |   9.76e-07   2.11e-07     4.63   0.000     5.63e-07    1.39e-06
+--------------------------------------------------------------------------------
+
+. est store GARCH_Gold
+
+. predict ret_gold_vol,variance
+
+. 
+. arch dln_oil dTreasury dln_USINDEX M2,ar(1 2)
+
+(setting optimization to BHHH)
+Iteration 0:  Log likelihood =  8835.6835  
+Iteration 1:  Log likelihood =  8931.5602  
+Iteration 2:  Log likelihood =  8945.6296  
+Iteration 3:  Log likelihood =  8946.5982  
+Iteration 4:  Log likelihood =  8946.8132  
+(switching optimization to BFGS)
+Iteration 5:  Log likelihood =  8946.8704  
+Iteration 6:  Log likelihood =  8946.8872  
+Iteration 7:  Log likelihood =  8946.8876  
+Iteration 8:  Log likelihood =  8946.8876  
+Iteration 9:  Log likelihood =  8946.8876  
+Iteration 10: Log likelihood =  8946.8876  
+
+Time-series regression -- AR disturbances
+
+Sample: 22 thru 4343                            Number of obs     =       4322
+                                                Wald chi2(5)      =   77143.07
+Log likelihood = 8946.888                       Prob > chi2       =     0.0000
+
+------------------------------------------------------------------------------
+             |                 OPG
+     dln_oil | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+dln_oil      |
+   dTreasury |   .0261678   .0046857     5.58   0.000     .0169841    .0353516
+ dln_USINDEX |  -2.508327    .074555   -33.64   0.000    -2.654452   -2.362202
+          M2 |   .0057604   .0020322     2.83   0.005     .0017773    .0097435
+       _cons |  -.0289719   .0157741    -1.84   0.066    -.0598886    .0019449
+-------------+----------------------------------------------------------------
+ARMA         |
+          ar |
+         L1. |   .8760033   .0104128    84.13   0.000     .8555945    .8964121
+         L2. |   .0689985   .0107294     6.43   0.000     .0479693    .0900276
+-------------+----------------------------------------------------------------
+     /SIGMA2 |   .0009321   .0000121    76.90   0.000     .0009084    .0009559
+------------------------------------------------------------------------------
+
+. est store AR_Oil
+
+. predict ret_oil_error,resid
+(1 missing value generated)
+
+. arch ret_oil_error,arch(1) garch(1)
+
+(setting optimization to BHHH)
+Iteration 0:  Log likelihood =  9163.7274  
+Iteration 1:  Log likelihood =  9253.0907  
+Iteration 2:  Log likelihood =  9327.2615  
+Iteration 3:  Log likelihood =  9358.2842  
+Iteration 4:  Log likelihood =  9390.0353  
+(switching optimization to BFGS)
+Iteration 5:  Log likelihood =  9390.4955  
+Iteration 6:  Log likelihood =  9390.5013  
+Iteration 7:  Log likelihood =  9390.5015  
+Iteration 8:  Log likelihood =  9390.5015  
+Iteration 9:  Log likelihood =  9390.5015  
+
+ARCH family regression
+
+Sample: 22 thru 4343                            Number of obs     =       4322
+                                                Wald chi2(.)      =          .
+Log likelihood = 9390.501                       Prob > chi2       =          .
+
+-------------------------------------------------------------------------------
+              |                 OPG
+ret_oil_error | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+--------------+----------------------------------------------------------------
+ret_oil_error |
+        _cons |   .0000404   .0003691     0.11   0.913    -.0006829    .0007638
+--------------+----------------------------------------------------------------
+ARCH          |
+         arch |
+          L1. |   .0434257   .0038664    11.23   0.000     .0358478    .0510036
+              |
+        garch |
+          L1. |   .9524788    .004123   231.01   0.000     .9443978    .9605598
+              |
+        _cons |   4.17e-06   9.91e-07     4.21   0.000     2.23e-06    6.11e-06
+-------------------------------------------------------------------------------
+
+. est store GARCH_Oil
+
+. predict ret_oil_vol, variance
+
+. 
+. outreg2 [AR_Gold GARCH_Gold AR_Oil GARCH_Oil AR_Stock GARCH_Stock] using GARCH,
+> tex replace
+GARCH.tex
+dir : seeout
+
+. 
+. //Visualize the volatility result for returns.
+. **Change the value of Recession for plotting the shade area for business cycle.
+. replace VIX = VIX/21
+(4,323 real changes made)
+
+. replace ret_sp_vol = sqrt(ret_sp_vol)*100
+(4,323 real changes made)
+
+. replace ret_gold_vol = sqrt(ret_gold_vol)*100
+(4,323 real changes made)
+
+. replace ret_oil_vol = sqrt(ret_oil_vol)*100
+(4,323 real changes made)
+
+. replace Recession = 8
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line VIX Date)
+>  (line ret_sp_vol Date),name(g1,replace) nodraw)
+
+. replace Recession = 8
+(0 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line VIX Date)
+>  (line ret_gold_vol Date),name(g2,replace) nodraw)
+
+. replace Recession = 8
+(0 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(0))(line VIX Date)
+>  (line ret_oil_vol Date),name(g3,replace) nodraw)
+
+. graph combine g1 g2 g3, col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs5.png,height (1200) replace
+(file Graphs5.png not found)
+file Graphs5.png saved as PNG format
+
+. 
+. gr tw ((line VIX Date) (line ret_sp_vol Date),name(g1,replace) nodraw)
+
+. gr tw ((line VIX Date) (line ret_gold_vol Date),name(g2,replace) nodraw)
+
+. replace Recession = 0.8
+(4,323 real changes made)
+
+. gr tw ((line VIX Date) (line ret_oil_vol Date),name(g3,replace) nodraw)
+
+. graph combine g1 g2 g3, col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs14.png,height (1200) replace
+(file Graphs14.png not found)
+file Graphs14.png saved as PNG format
+
+. 
+. //Calculate the dynamic correlation of returns.
+. **Change the value of Recession for plotting the shade area for business cycle.
+. mgarch dcc (dln_sp dln_gold = L.dln_sp L.dln_gold dTreasury dln_USINDEX M2,noco
+> nstant),arch(1) garch(1)
+
+Calculating starting values....
+
+Optimizing log likelihood
+
+(setting technique to bhhh)
+Iteration 0:  Log likelihood =  24540.962  
+Iteration 1:  Log likelihood =  24832.275  
+Iteration 2:  Log likelihood =  25142.803  
+Iteration 3:  Log likelihood =  25333.542  
+Iteration 4:  Log likelihood =  25373.301  
+Iteration 5:  Log likelihood =  25391.948  
+Iteration 6:  Log likelihood =  25400.442  
+Iteration 7:  Log likelihood =   25409.82  
+Iteration 8:  Log likelihood =  25410.863  
+Iteration 9:  Log likelihood =  25411.096  
+(switching technique to nr)
+Iteration 10: Log likelihood =  25411.139  
+Iteration 11: Log likelihood =  25411.152  
+Iteration 12: Log likelihood =  25411.152  
+
+Refining estimates
+
+Iteration 0:  Log likelihood =  25411.152  
+Iteration 1:  Log likelihood =  25411.152  
+
+Dynamic conditional correlation MGARCH model
+Sample: 23 thru 4343                                  Number of obs =    4,321
+Distribution: Gaussian                                Wald chi2(10) = 70311.32
+Log likelihood = 25411.15                             Prob > chi2   =   0.0000
+
+-------------------------------------------------------------------------------
+              | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+--------------+----------------------------------------------------------------
+dln_sp        |
+       dln_sp |
+          L1. |   .9210101   .0060085   153.28   0.000     .9092336    .9327866
+              |
+     dln_gold |
+          L1. |  -.0198389   .0043318    -4.58   0.000    -.0283291   -.0113486
+              |
+    dTreasury |   .0009023   .0012326     0.73   0.464    -.0015136    .0033182
+  dln_USINDEX |  -.0921515   .0156791    -5.88   0.000     -.122882   -.0614211
+           M2 |   .0001352   .0000297     4.55   0.000     .0000769    .0001935
+--------------+----------------------------------------------------------------
+ARCH_dln_sp   |
+         arch |
+          L1. |   .0698096   .0064244    10.87   0.000     .0572181    .0824011
+              |
+        garch |
+          L1. |    .920766   .0070552   130.51   0.000     .9069381     .934594
+              |
+        _cons |   1.71e-06   3.41e-07     5.00   0.000     1.04e-06    2.38e-06
+--------------+----------------------------------------------------------------
+dln_gold      |
+       dln_sp |
+          L1. |  -.0196328   .0056466    -3.48   0.001    -.0306999   -.0085657
+              |
+     dln_gold |
+          L1. |   .9144465   .0058086   157.43   0.000     .9030619    .9258311
+              |
+    dTreasury |   .0003506   .0012801     0.27   0.784    -.0021583    .0028596
+  dln_USINDEX |  -.1910292   .0179778   -10.63   0.000     -.226265   -.1557934
+           M2 |   .0000853   .0000336     2.54   0.011     .0000194    .0001512
+--------------+----------------------------------------------------------------
+ARCH_dln_gold |
+         arch |
+          L1. |   .0504047   .0054555     9.24   0.000     .0397121    .0610973
+              |
+        garch |
+          L1. |    .945171   .0057089   165.56   0.000     .9339818    .9563601
+              |
+        _cons |   1.13e-06   3.40e-07     3.34   0.001     4.67e-07    1.80e-06
+--------------+----------------------------------------------------------------
+  corr(dln_sp,|
+     dln_gold)|  -.0168048   .0487677    -0.34   0.730    -.1123878    .0787781
+--------------+----------------------------------------------------------------
+/Adjustment   |
+      lambda1 |   .0157725   .0031297     5.04   0.000     .0096385    .0219065
+      lambda2 |   .9768905    .004851   201.38   0.000     .9673826    .9863983
+-------------------------------------------------------------------------------
+
+. est store DCC_Return_Stock_Gold
+
+. test _b[/Adjustment:lambda1] = _b[/Adjustment:lambda2] = 0
+
+ ( 1)  [/Adjustment]lambda1 - [/Adjustment]lambda2 = 0
+ ( 2)  [/Adjustment]lambda1 = 0
+
+           chi2(  2) = 1.1e+05
+         Prob > chi2 =    0.0000
+
+. predict GS*, correlation
+
+. replace Recession = 0.6
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.5))(line GS_dln
+> _gold_dln_sp Date),name(g4,replace) nodraw)
+
+. mgarch dcc (dln_sp dln_oil = L.dln_sp L.dln_oil dTreasury dln_USINDEX M2,nocons
+> tant),arch(1) garch(1)
+
+Calculating starting values....
+
+Optimizing log likelihood
+
+(setting technique to bhhh)
+Iteration 0:  Log likelihood =  21530.178  
+Iteration 1:  Log likelihood =  21874.674  
+Iteration 2:  Log likelihood =  22124.757  
+Iteration 3:  Log likelihood =  22238.966  
+Iteration 4:  Log likelihood =  22289.585  
+Iteration 5:  Log likelihood =  22299.389  
+Iteration 6:  Log likelihood =  22300.121  
+Iteration 7:  Log likelihood =  22300.265  
+Iteration 8:  Log likelihood =  22300.294  
+Iteration 9:  Log likelihood =  22300.301  
+(switching technique to nr)
+Iteration 10: Log likelihood =  22300.303  
+Iteration 11: Log likelihood =  22300.304  
+
+Refining estimates
+
+Iteration 0:  Log likelihood =  22300.304  
+Iteration 1:  Log likelihood =  22300.304  (backed up)
+
+Dynamic conditional correlation MGARCH model
+Sample: 23 thru 4343                                  Number of obs =    4,321
+Distribution: Gaussian                                Wald chi2(10) = 64675.04
+Log likelihood = 22300.3                              Prob > chi2   =   0.0000
+
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+dln_sp       |
+      dln_sp |
+         L1. |   .9256096   .0058483   158.27   0.000     .9141471     .937072
+             |
+     dln_oil |
+         L1. |  -.0052025   .0019555    -2.66   0.008    -.0090352   -.0013698
+             |
+   dTreasury |   .0010222   .0012266     0.83   0.405    -.0013818    .0034262
+ dln_USINDEX |  -.0607377   .0139404    -4.36   0.000    -.0880604   -.0334151
+          M2 |     .00012   .0000293     4.10   0.000     .0000626    .0001774
+-------------+----------------------------------------------------------------
+ARCH_dln_sp  |
+        arch |
+         L1. |    .070532   .0064438    10.95   0.000     .0579025    .0831616
+             |
+       garch |
+         L1. |    .919625   .0071164   129.23   0.000      .905677    .9335729
+             |
+       _cons |   1.84e-06   3.56e-07     5.18   0.000     1.15e-06    2.54e-06
+-------------+----------------------------------------------------------------
+dln_oil      |
+      dln_sp |
+         L1. |  -.0028291   .0117801    -0.24   0.810    -.0259176    .0202595
+             |
+     dln_oil |
+         L1. |    .932013   .0053379   174.60   0.000     .9215509     .942475
+             |
+   dTreasury |   .0047635    .002551     1.87   0.062    -.0002365    .0097634
+ dln_USINDEX |  -.1833359   .0345467    -5.31   0.000    -.2510462   -.1156257
+          M2 |   .0000633   .0000637     0.99   0.320    -.0000615    .0001882
+-------------+----------------------------------------------------------------
+ARCH_dln_oil |
+        arch |
+         L1. |   .0462641   .0045986    10.06   0.000      .037251    .0552771
+             |
+       garch |
+         L1. |    .949814   .0048197   197.07   0.000     .9403676    .9592605
+             |
+       _cons |   4.67e-06   1.38e-06     3.39   0.001     1.97e-06    7.38e-06
+-------------+----------------------------------------------------------------
+ corr(dln_sp,|
+     dln_oil)|    .259682   .0764286     3.40   0.001     .1098847    .4094793
+-------------+----------------------------------------------------------------
+/Adjustment  |
+     lambda1 |   .0269203   .0029331     9.18   0.000     .0211715     .032669
+     lambda2 |   .9674786   .0034806   277.96   0.000     .9606568    .9743005
+------------------------------------------------------------------------------
+
+. est store DCC_Return_Stock_Oil
+
+. test _b[/Adjustment:lambda1] = _b[/Adjustment:lambda2] = 0
+
+ ( 1)  [/Adjustment]lambda1 - [/Adjustment]lambda2 = 0
+ ( 2)  [/Adjustment]lambda1 = 0
+
+           chi2(  2) = 3.0e+05
+         Prob > chi2 =    0.0000
+
+. predict OS*, correlation
+
+. replace Recession = 1
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.5))(line OS_dln
+> _oil_dln_sp Date),name(g5,replace) nodraw)
+
+. mgarch dcc (dln_sp dln_VIX = L.dln_sp L.dln_VIX dTreasury dln_USINDEX M2,nocons
+> tant),arch(1) garch(1)
+
+Calculating starting values....
+
+Optimizing log likelihood
+
+(setting technique to bhhh)
+Iteration 0:  Log likelihood =   18628.97  
+Iteration 1:  Log likelihood =  18996.267  
+Iteration 2:  Log likelihood =   19418.13  
+Iteration 3:  Log likelihood =  19626.593  
+Iteration 4:  Log likelihood =  19746.438  
+Iteration 5:  Log likelihood =  19781.605  
+Iteration 6:  Log likelihood =  19790.414  
+Iteration 7:  Log likelihood =  19792.049  
+Iteration 8:  Log likelihood =  19792.385  
+Iteration 9:  Log likelihood =  19792.469  
+(switching technique to nr)
+Iteration 10: Log likelihood =  19792.493  
+Iteration 11: Log likelihood =  19792.499  
+Iteration 12: Log likelihood =  19792.499  
+
+Refining estimates
+
+Iteration 0:  Log likelihood =  19792.499  
+Iteration 1:  Log likelihood =  19792.499  (backed up)
+
+Dynamic conditional correlation MGARCH model
+Sample: 23 thru 4343                                  Number of obs =    4,321
+Distribution: Gaussian                                Wald chi2(10) = 62232.20
+Log likelihood = 19792.5                              Prob > chi2   =   0.0000
+
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+dln_sp       |
+      dln_sp |
+         L1. |      .9228   .0068493   134.73   0.000     .9093755    .9362244
+             |
+     dln_VIX |
+         L1. |  -.0020849   .0010758    -1.94   0.053    -.0041934    .0000237
+             |
+   dTreasury |   .0017002   .0010924     1.56   0.120    -.0004409    .0038414
+ dln_USINDEX |  -.0477863   .0112663    -4.24   0.000    -.0698677   -.0257048
+          M2 |   .0001656   .0000257     6.44   0.000     .0001152     .000216
+-------------+----------------------------------------------------------------
+ARCH_dln_sp  |
+        arch |
+         L1. |   .0696477   .0047948    14.53   0.000     .0602501    .0790454
+             |
+       garch |
+         L1. |   .9302397   .0045964   202.38   0.000     .9212309    .9392484
+             |
+       _cons |   6.36e-07   1.68e-07     3.79   0.000     3.07e-07    9.64e-07
+-------------+----------------------------------------------------------------
+dln_VIX      |
+      dln_sp |
+         L1. |   .0533173   .0395067     1.35   0.177    -.0241143    .1307489
+             |
+     dln_VIX |
+         L1. |   .8939765   .0089231   100.19   0.000     .8764875    .9114654
+             |
+   dTreasury |  -.0132142   .0069555    -1.90   0.057    -.0268467    .0004183
+ dln_USINDEX |   .2237958   .0887317     2.52   0.012     .0498849    .3977067
+          M2 |  -.0007183   .0001851    -3.88   0.000    -.0010811   -.0003555
+-------------+----------------------------------------------------------------
+ARCH_dln_VIX |
+        arch |
+         L1. |   .0507389   .0043671    11.62   0.000     .0421796    .0592982
+             |
+       garch |
+         L1. |    .935264   .0052659   177.61   0.000     .9249431     .945585
+             |
+       _cons |   .0001356   .0000211     6.43   0.000     .0000943    .0001769
+-------------+----------------------------------------------------------------
+ corr(dln_sp,|
+     dln_VIX)|   -.838951   .0109648   -76.51   0.000    -.8604416   -.8174604
+-------------+----------------------------------------------------------------
+/Adjustment  |
+     lambda1 |   .0270638   .0037248     7.27   0.000     .0197634    .0343643
+     lambda2 |   .9549294   .0064731   147.52   0.000     .9422423    .9676164
+------------------------------------------------------------------------------
+
+. est store DCC_Return_VIX_Stock
+
+. test _b[/Adjustment:lambda1] = _b[/Adjustment:lambda2] = 0
+
+ ( 1)  [/Adjustment]lambda1 - [/Adjustment]lambda2 = 0
+ ( 2)  [/Adjustment]lambda1 = 0
+
+           chi2(  2) =61198.07
+         Prob > chi2 =    0.0000
+
+. replace Recession = 0.5
+(4,323 real changes made)
+
+. predict VS*,correlation
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-1))(line VS_dln_V
+> IX_dln_sp Date),name(g6,replace) nodraw)
+
+. replace Recession = 0.6
+(4,323 real changes made)
+
+. mgarch dcc (dln_gold dln_oil = l.dln_gold l.dln_oil),arch(1) garch(1)
+
+Calculating starting values....
+
+Optimizing log likelihood
+
+(setting technique to bhhh)
+Iteration 0:  Log likelihood =  21018.523  
+Iteration 1:  Log likelihood =  21264.867  
+Iteration 2:  Log likelihood =  21534.936  
+Iteration 3:  Log likelihood =  21602.139  
+Iteration 4:  Log likelihood =  21621.435  
+Iteration 5:  Log likelihood =  21625.037  
+Iteration 6:  Log likelihood =  21628.864  
+Iteration 7:  Log likelihood =  21630.191  
+Iteration 8:  Log likelihood =  21630.734  
+Iteration 9:  Log likelihood =  21630.862  
+(switching technique to nr)
+Iteration 10: Log likelihood =  21630.867  
+Iteration 11: Log likelihood =  21630.868  
+
+Refining estimates
+
+Iteration 0:  Log likelihood =  21630.868  
+Iteration 1:  Log likelihood =  21630.868  
+
+Dynamic conditional correlation MGARCH model
+Sample: 23 thru 4343                                  Number of obs =    4,321
+Distribution: Gaussian                                Wald chi2(4)  = 68387.69
+Log likelihood = 21630.87                             Prob > chi2   =   0.0000
+
+--------------------------------------------------------------------------------
+               | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+---------------+----------------------------------------------------------------
+dln_gold       |
+      dln_gold |
+           L1. |   .9463736   .0050282   188.21   0.000     .9365186    .9562287
+               |
+       dln_oil |
+           L1. |   .0008149    .002126     0.38   0.701     -.003352    .0049818
+               |
+         _cons |   .0003326   .0001917     1.73   0.083    -.0000432    .0007083
+---------------+----------------------------------------------------------------
+ARCH_dln_gold  |
+          arch |
+           L1. |   .0470819   .0050969     9.24   0.000     .0370922    .0570715
+               |
+         garch |
+           L1. |   .9481845   .0054073   175.35   0.000     .9375863    .9587827
+               |
+         _cons |   1.18e-06   3.44e-07     3.43   0.001     5.07e-07    1.86e-06
+---------------+----------------------------------------------------------------
+dln_oil        |
+      dln_gold |
+           L1. |  -.0157759   .0089503    -1.76   0.078    -.0333181    .0017663
+               |
+       dln_oil |
+           L1. |   .9441292   .0052417   180.12   0.000     .9338557    .9544028
+               |
+         _cons |   .0004599   .0003949     1.16   0.244    -.0003142    .0012339
+---------------+----------------------------------------------------------------
+ARCH_dln_oil   |
+          arch |
+           L1. |   .0470293   .0048244     9.75   0.000     .0375735     .056485
+               |
+         garch |
+           L1. |     .95017   .0049431   192.22   0.000     .9404817    .9598583
+               |
+         _cons |   3.95e-06   1.31e-06     3.03   0.002     1.39e-06    6.51e-06
+---------------+----------------------------------------------------------------
+ corr(dln_gold,|
+       dln_oil)|   .1673329   .0269539     6.21   0.000     .1145041    .2201616
+---------------+----------------------------------------------------------------
+/Adjustment    |
+       lambda1 |    .019019   .0049613     3.83   0.000     .0092949     .028743
+       lambda2 |   .9576859   .0125497    76.31   0.000      .933089    .9822829
+--------------------------------------------------------------------------------
+
+. predict GO*,correlation
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.2))(line GO_dln
+> _oil_dln_gold Date),name(g7,replace) nodraw)
+
+. est store DCC_Return_Gold_Oil
+
+. graph combine g4 g5 g6 g7, col(4) xsize(20) ysize(5)
+
+. graph export Graphs6.png,height (1200) replace
+(file Graphs6.png not found)
+file Graphs6.png saved as PNG format
+
+. outreg2 [DCC_Return_Stock_Gold DCC_Return_Stock_Oil DCC_Return_Gold_Oil] using 
+> DCC_Return,tex replace
+DCC_Return.tex
+dir : seeout
+
+. 
+. gr tw (line GS_dln_gold_dln_sp Date,name(g4,replace) nodraw)
+
+. gr tw (line OS_dln_oil_dln_sp Date,name(g5,replace) nodraw)
+
+. gr tw (line VS_dln_VIX_dln_sp Date,name(g6,replace) nodraw)
+
+. gr tw (line GO_dln_oil_dln_gold Date,name(g7,replace) nodraw)
+
+. graph combine g4 g5 g6 g7,col(4) xsize(20) ysize(5)
+
+. graph export Graphs13.png,height(1200) replace
+(file Graphs13.png not found)
+file Graphs13.png saved as PNG format
+
+. 
+. //Consider European Sovereign Debt Crisis
+. **Change the value of Recession and EuroCrisis for plotting the shade area for 
+> business cycle.
+. replace Recession = 0.6
+(0 real changes made)
+
+. replace EuroCrisis = 0.6
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.5))(area EuroCr
+> isis Date if euro==1,color(gs12) base(-0.5))(line (GS_dln_gold_dln_sp Date)),na
+> me(g4,replace) nodraw)
+
+. replace Recession = 1
+(4,323 real changes made)
+
+. replace EuroCrisis = 1
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.5))(area EuroCr
+> isis Date if euro==1,color(gs12) base(-0.5))(line OS_dln_oil_dln_sp Date),name(
+> g5,replace) nodraw)
+
+. replace Recession = 0.5
+(4,323 real changes made)
+
+. replace EuroCrisis = 0.5
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-1))(area EuroCris
+> is Date if euro==1,color(gs12) base(-1))(line VS_dln_VIX_dln_sp Date),name(g6,r
+> eplace) nodraw)
+
+. replace Recession = 0.6
+(4,323 real changes made)
+
+. replace EuroCrisis = 0.6
+(4,323 real changes made)
+
+. gr tw ((area Recession Date if recession==1,color(gs12) base(-0.2))(area EuroCr
+> isis Date if euro==1,color(gs12) base(-1))(line GO_dln_oil_dln_gold Date),name(
+> g7,replace) nodraw)
+
+. graph combine g4 g5 g6, col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs7.png,height (1200) replace
+(file Graphs7.png not found)
+file Graphs7.png saved as PNG format
+
+. 
+. pac ln_gold,name(g1,replace) nodraw
+
+. pac ln_oil,name(g2,replace) nodraw
+
+. pac ln_sp,name(g3,replace) nodraw
+
+. graph combine g1 g2 g3,col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs8.png,height(1200) replace
+(file Graphs8.png not found)
+file Graphs8.png saved as PNG format
+
+. 
+. //Test on the relationship between volatility and increment of dynamic correlat
+> ion.
+. tsset tick
+
+Time variable: tick, 21 to 4343
+        Delta: 1 unit
+
+. sum OS_dln_oil_dln_sp GS_dln_gold_dln_sp
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+OS_dln_oil~p |      4,321    .1976514    .2167918  -.3131411   .6797413
+GS_dln_gol~p |      4,321   -.0255852    .1315765  -.3247597   .3679357
+
+. gen difference_OS = abs(OS_dln_oil_dln_sp-L.OS_dln_oil_dln_sp)
+(3 missing values generated)
+
+. gen difference_GS = abs(GS_dln_gold_dln_sp-L.GS_dln_gold_dln_sp)
+(3 missing values generated)
+
+. gen GS = abs(GS_dln_gold_dln_sp)
+(2 missing values generated)
+
+. gen OS = abs(OS_dln_oil_dln_sp)
+(2 missing values generated)
+
+. reg difference_GS ret_gold_vol
+
+      Source |       SS           df       MS      Number of obs   =     4,320
+-------------+----------------------------------   F(1, 4318)      =      5.74
+       Model |  .001064466         1  .001064466   Prob > F        =    0.0166
+    Residual |  .800701807     4,318  .000185433   R-squared       =    0.0013
+-------------+----------------------------------   Adj R-squared   =    0.0011
+       Total |  .801766274     4,319  .000185637   Root MSE        =    .01362
+
+------------------------------------------------------------------------------
+differenc~GS | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ret_gold_vol |   .0009306   .0003884     2.40   0.017     .0001691    .0016921
+       _cons |   .0083693   .0005454    15.34   0.000        .0073    .0094387
+------------------------------------------------------------------------------
+
+. est store Gold_Corr
+
+. reg difference_GS ret_gold_vol l.difference_GS
+
+      Source |       SS           df       MS      Number of obs   =     4,319
+-------------+----------------------------------   F(2, 4316)      =      2.92
+       Model |  .001084623         2  .000542311   Prob > F        =    0.0539
+    Residual |  .800635791     4,316  .000185504   R-squared       =    0.0014
+-------------+----------------------------------   Adj R-squared   =    0.0009
+       Total |  .801720414     4,318  .000185669   Root MSE        =    .01362
+
+-------------------------------------------------------------------------------
+difference_GS | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+--------------+----------------------------------------------------------------
+ ret_gold_vol |   .0009277   .0003888     2.39   0.017     .0001655    .0016899
+              |
+difference_GS |
+          L1. |   .0045524   .0152224     0.30   0.765    -.0252914    .0343962
+              |
+        _cons |   .0083311     .00056    14.88   0.000     .0072333     .009429
+-------------------------------------------------------------------------------
+
+. est store Gold_Corr_AR
+
+. reg difference_GS ret_gold_vol ret_sp_vol l.difference_GS
+
+      Source |       SS           df       MS      Number of obs   =     4,319
+-------------+----------------------------------   F(3, 4315)      =      2.32
+       Model |  .001291519         3  .000430506   Prob > F        =    0.0733
+    Residual |  .800428895     4,315  .000185499   R-squared       =    0.0016
+-------------+----------------------------------   Adj R-squared   =    0.0009
+       Total |  .801720414     4,318  .000185669   Root MSE        =    .01362
+
+-------------------------------------------------------------------------------
+difference_GS | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+--------------+----------------------------------------------------------------
+ ret_gold_vol |   .0006315   .0004794     1.32   0.188    -.0003084    .0015713
+   ret_sp_vol |    .000427   .0004043     1.06   0.291    -.0003657    .0012197
+              |
+difference_GS |
+          L1. |   .0042682   .0152246     0.28   0.779    -.0255799    .0341162
+              |
+        _cons |   .0081608   .0005827    14.00   0.000     .0070184    .0093033
+-------------------------------------------------------------------------------
+
+. est store Gold_Corr_SP
+
+. reg difference_OS ret_oil_vol
+
+      Source |       SS           df       MS      Number of obs   =     4,320
+-------------+----------------------------------   F(1, 4318)      =      1.15
+       Model |  .000503591         1  .000503591   Prob > F        =    0.2845
+    Residual |  1.89754165     4,318  .000439449   R-squared       =    0.0003
+-------------+----------------------------------   Adj R-squared   =    0.0000
+       Total |  1.89804524     4,319  .000439464   Root MSE        =    .02096
+
+------------------------------------------------------------------------------
+differenc~OS | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ ret_oil_vol |   .0003363   .0003142     1.07   0.284    -.0002796    .0009523
+       _cons |   .0139797   .0009638    14.51   0.000     .0120903    .0158692
+------------------------------------------------------------------------------
+
+. est store Oil_Corr
+
+. reg difference_OS ret_oil_vol l.difference_OS
+
+      Source |       SS           df       MS      Number of obs   =     4,319
+-------------+----------------------------------   F(2, 4316)      =      2.59
+       Model |  .002276131         2  .001138065   Prob > F        =    0.0751
+    Residual |  1.89575888     4,316   .00043924   R-squared       =    0.0012
+-------------+----------------------------------   Adj R-squared   =    0.0007
+       Total |  1.89803501     4,318  .000439563   Root MSE        =    .02096
+
+-------------------------------------------------------------------------------
+difference_OS | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+--------------+----------------------------------------------------------------
+  ret_oil_vol |   .0003208   .0003142     1.02   0.307    -.0002953    .0009368
+              |
+difference_OS |
+          L1. |   .0305715   .0152179     2.01   0.045     .0007366    .0604064
+              |
+        _cons |   .0135669   .0009852    13.77   0.000     .0116354    .0154983
+-------------------------------------------------------------------------------
+
+. est store Oil_Corr_AR
+
+. reg difference_OS ret_oil_vol ret_sp_vol l.difference_OS
+
+      Source |       SS           df       MS      Number of obs   =     4,319
+-------------+----------------------------------   F(3, 4315)      =      1.82
+       Model |  .002393025         3  .000797675   Prob > F        =    0.1420
+    Residual |  1.89564198     4,315  .000439314   R-squared       =    0.0013
+-------------+----------------------------------   Adj R-squared   =    0.0006
+       Total |  1.89803501     4,318  .000439563   Root MSE        =    .02096
+
+-------------------------------------------------------------------------------
+difference_OS | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+--------------+----------------------------------------------------------------
+  ret_oil_vol |   .0002168   .0003733     0.58   0.561     -.000515    .0009486
+   ret_sp_vol |    .000309   .0005991     0.52   0.606    -.0008655    .0014835
+              |
+difference_OS |
+          L1. |   .0305443   .0152193     2.01   0.045     .0007067    .0603819
+              |
+        _cons |   .0134644   .0010051    13.40   0.000     .0114939    .0154348
+-------------------------------------------------------------------------------
+
+. est store Oil_Corr_SP
+
+. outreg2 [Gold_Corr Gold_Corr_AR Gold_Corr_SP Oil_Corr Oil_Corr_AR Oil_Corr_SP] 
+> using Coorelation,tex replace
+Coorelation.tex
+dir : seeout
+
+. gr tw (line (difference_GS Date),name(g1,replace) nodraw)
+
+. gr tw (line (difference_OS Date),name(g2,replace) nodraw)
+
+. graph combine g1 g2,col(3) xsize(20) ysize(6.5)
+
+. graph export Graphs12.png,height(1200) replace
+(file Graphs12.png not found)
+file Graphs12.png saved as PNG format
+
+. dfgls difference_OS
+
+DF-GLS test for unit root                Number of obs = 4,289
+Variable: difference_OS
+Lag selection: Schwert criterion         Maximum lag   =    30
+
+                             -------- Critical value ---------
+ [lags]      DF-GLS tau           1%           5%          10%
+--------------------------------------------------------------
+     30          -9.743       -3.480       -2.833       -2.546
+     29          -9.970       -3.480       -2.834       -2.547
+     28         -10.143       -3.480       -2.834       -2.547
+     27         -10.222       -3.480       -2.834       -2.547
+     26         -10.233       -3.480       -2.835       -2.547
+     25         -10.285       -3.480       -2.835       -2.548
+     24         -10.768       -3.480       -2.835       -2.548
+     23         -10.751       -3.480       -2.836       -2.548
+     22         -11.024       -3.480       -2.836       -2.549
+     21         -11.083       -3.480       -2.836       -2.549
+     20         -11.233       -3.480       -2.837       -2.549
+     19         -13.382       -3.480       -2.837       -2.549
+     18         -14.009       -3.480       -2.837       -2.550
+     17         -14.348       -3.480       -2.838       -2.550
+     16         -14.929       -3.480       -2.838       -2.550
+     15         -15.245       -3.480       -2.838       -2.551
+     14         -16.110       -3.480       -2.838       -2.551
+     13         -16.459       -3.480       -2.839       -2.551
+     12         -17.644       -3.480       -2.839       -2.551
+     11         -18.759       -3.480       -2.839       -2.552
+     10         -19.325       -3.480       -2.840       -2.552
+      9         -20.504       -3.480       -2.840       -2.552
+      8         -22.088       -3.480       -2.840       -2.553
+      7         -23.238       -3.480       -2.841       -2.553
+      6         -24.326       -3.480       -2.841       -2.553
+      5         -25.699       -3.480       -2.841       -2.553
+      4         -27.799       -3.480       -2.842       -2.554
+      3         -31.728       -3.480       -2.842       -2.554
+      2         -36.432       -3.480       -2.842       -2.554
+      1         -44.835       -3.480       -2.842       -2.554
+--------------------------------------------------------------
+Opt lag (Ng–Perron seq t) = 25 with RMSE = .0206703
+Min SIC  = -7.723446 at lag  1 with RMSE = .0209908
+Min MAIC = -6.736423 at lag 25 with RMSE = .0206703
+
+. dfgls difference_OS
+
+DF-GLS test for unit root                Number of obs = 4,289
+Variable: difference_OS
+Lag selection: Schwert criterion         Maximum lag   =    30
+
+                             -------- Critical value ---------
+ [lags]      DF-GLS tau           1%           5%          10%
+--------------------------------------------------------------
+     30          -9.743       -3.480       -2.833       -2.546
+     29          -9.970       -3.480       -2.834       -2.547
+     28         -10.143       -3.480       -2.834       -2.547
+     27         -10.222       -3.480       -2.834       -2.547
+     26         -10.233       -3.480       -2.835       -2.547
+     25         -10.285       -3.480       -2.835       -2.548
+     24         -10.768       -3.480       -2.835       -2.548
+     23         -10.751       -3.480       -2.836       -2.548
+     22         -11.024       -3.480       -2.836       -2.549
+     21         -11.083       -3.480       -2.836       -2.549
+     20         -11.233       -3.480       -2.837       -2.549
+     19         -13.382       -3.480       -2.837       -2.549
+     18         -14.009       -3.480       -2.837       -2.550
+     17         -14.348       -3.480       -2.838       -2.550
+     16         -14.929       -3.480       -2.838       -2.550
+     15         -15.245       -3.480       -2.838       -2.551
+     14         -16.110       -3.480       -2.838       -2.551
+     13         -16.459       -3.480       -2.839       -2.551
+     12         -17.644       -3.480       -2.839       -2.551
+     11         -18.759       -3.480       -2.839       -2.552
+     10         -19.325       -3.480       -2.840       -2.552
+      9         -20.504       -3.480       -2.840       -2.552
+      8         -22.088       -3.480       -2.840       -2.553
+      7         -23.238       -3.480       -2.841       -2.553
+      6         -24.326       -3.480       -2.841       -2.553
+      5         -25.699       -3.480       -2.841       -2.553
+      4         -27.799       -3.480       -2.842       -2.554
+      3         -31.728       -3.480       -2.842       -2.554
+      2         -36.432       -3.480       -2.842       -2.554
+      1         -44.835       -3.480       -2.842       -2.554
+--------------------------------------------------------------
+Opt lag (Ng–Perron seq t) = 25 with RMSE = .0206703
+Min SIC  = -7.723446 at lag  1 with RMSE = .0209908
+Min MAIC = -6.736423 at lag 25 with RMSE = .0206703
+
+. 
+. //Do the causality test.
+. //Regression on the dummy variables.
+. gen post = 0
+
+. replace post = 1 if DateNum > 18050.5
+(2,548 real changes made)
+
+. reg GS_dln_gold_dln_sp i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,321
+-------------+----------------------------------   F(2, 4318)      =    125.03
+       Model |  4.09400795         2  2.04700397   Prob > F        =    0.0000
+    Residual |  70.6954685     4,318  .016372272   R-squared       =    0.0547
+-------------+----------------------------------   Adj R-squared   =    0.0543
+       Total |  74.7894765     4,320  .017312379   Root MSE        =    .12795
+
+------------------------------------------------------------------------------
+GS_dln_gol~p | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ 1.recession |  -.0990504   .0075386   -13.14   0.000    -.1138299   -.0842708
+      1.post |   .0145962    .004246     3.44   0.001     .0062717    .0229206
+       _cons |  -.0258941   .0034064    -7.60   0.000    -.0325723   -.0192159
+------------------------------------------------------------------------------
+
+. outreg2 using Causality,tex
+Causality.tex
+dir : seeout
+
+. reg OS_dln_oil_dln_sp i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,321
+-------------+----------------------------------   F(2, 4318)      =   1592.17
+       Model |  86.1769964         2  43.0884982   Prob > F        =    0.0000
+    Residual |   116.85723     4,318  .027062814   R-squared       =    0.4244
+-------------+----------------------------------   Adj R-squared   =    0.4242
+       Total |  203.034227     4,320  .046998664   Root MSE        =    .16451
+
+------------------------------------------------------------------------------
+OS_dln_oil~p | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ 1.recession |   .0836385   .0096922     8.63   0.000     .0646368    .1026402
+      1.post |   .3008003    .005459    55.10   0.000     .2900978    .3115028
+       _cons |    .013269   .0043795     3.03   0.002      .004683    .0218551
+------------------------------------------------------------------------------
+
+. outreg2 using Causality,tex
+Causality.tex
+dir : seeout
+
+. reg VS_dln_VIX_dln_sp i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,321
+-------------+----------------------------------   F(2, 4318)      =    202.11
+       Model |  1.66181706         2  .830908531   Prob > F        =    0.0000
+    Residual |  17.7519434     4,318  .004111149   R-squared       =    0.0856
+-------------+----------------------------------   Adj R-squared   =    0.0852
+       Total |  19.4137605     4,320  .004493926   Root MSE        =    .06412
+
+------------------------------------------------------------------------------
+VS_dln_VIX~p | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ 1.recession |  -.0593823   .0037776   -15.72   0.000    -.0667884   -.0519763
+      1.post |  -.0369805   .0021277   -17.38   0.000    -.0411519   -.0328091
+       _cons |  -.7605017   .0017069  -445.54   0.000    -.7638481   -.7571552
+------------------------------------------------------------------------------
+
+. outreg2 using Causality,tex
+Causality.tex
+dir : seeout
+
+. 
+. //Still a safe haven during and post recession?
+. replace VIX = VIX*3
+(4,323 real changes made)
+
+. reg dln_sp VIX dTreasury dln_USINDEX M2
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(4, 4317)      =    695.21
+       Model |  3.29318933         4  .823297331   Prob > F        =    0.0000
+    Residual |  5.11234815     4,317  .001184236   R-squared       =    0.3918
+-------------+----------------------------------   Adj R-squared   =    0.3912
+       Total |  8.40553748     4,321  .001945276   Root MSE        =    .03441
+
+------------------------------------------------------------------------------
+      dln_sp | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         VIX |  -.0155187   .0004873   -31.84   0.000    -.0164741   -.0145632
+   dTreasury |   .0203148   .0030433     6.68   0.000     .0143483    .0262813
+ dln_USINDEX |  -1.081649   .0362204   -29.86   0.000     -1.15266   -1.010639
+          M2 |   .0034856   .0003103    11.23   0.000     .0028772    .0040939
+       _cons |   .0258451   .0019599    13.19   0.000     .0220028    .0296875
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. reg dln_sp VIX dTreasury dln_USINDEX M2 i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(6, 4315)      =    491.57
+       Model |   3.4127222         6  .568787034   Prob > F        =    0.0000
+    Residual |  4.99281527     4,315  .001157083   R-squared       =    0.4060
+-------------+----------------------------------   Adj R-squared   =    0.4052
+       Total |  8.40553748     4,321  .001945276   Root MSE        =    .03402
+
+------------------------------------------------------------------------------
+      dln_sp | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         VIX |  -.0160738   .0005423   -29.64   0.000     -.017137   -.0150106
+   dTreasury |   .0233736   .0030363     7.70   0.000     .0174209    .0293263
+ dln_USINDEX |  -1.139544   .0364017   -31.30   0.000     -1.21091   -1.068178
+          M2 |   .0032137   .0003079    10.44   0.000       .00261    .0038175
+ 1.recession |   .0160264   .0023477     6.83   0.000     .0114237    .0206292
+      1.post |    .010628   .0011506     9.24   0.000     .0083723    .0128837
+       _cons |   .0213714   .0021536     9.92   0.000     .0171493    .0255935
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. reg dln_gold VIX dTreasury dln_USINDEX M2
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(4, 4317)      =    342.02
+       Model |  2.35852585         4  .589631463   Prob > F        =    0.0000
+    Residual |  7.44226357     4,317  .001723943   R-squared       =    0.2406
+-------------+----------------------------------   Adj R-squared   =    0.2399
+       Total |  9.80078942     4,321  .002268176   Root MSE        =    .04152
+
+------------------------------------------------------------------------------
+    dln_gold | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         VIX |   .0069427    .000588    11.81   0.000       .00579    .0080955
+   dTreasury |   -.012825   .0036719    -3.49   0.000    -.0200239   -.0056262
+ dln_USINDEX |  -1.569164   .0437015   -35.91   0.000    -1.654842   -1.483487
+          M2 |  -.0024873   .0003744    -6.64   0.000    -.0032213   -.0017533
+       _cons |   .0034842   .0023647     1.47   0.141    -.0011517    .0081201
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. reg dln_gold VIX dTreasury dln_USINDEX M2 i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(6, 4315)      =    233.62
+       Model |  2.40309321         6  .400515535   Prob > F        =    0.0000
+    Residual |  7.39769621     4,315  .001714414   R-squared       =    0.2452
+-------------+----------------------------------   Adj R-squared   =    0.2441
+       Total |  9.80078942     4,321  .002268176   Root MSE        =    .04141
+
+------------------------------------------------------------------------------
+    dln_gold | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         VIX |   .0082981   .0006601    12.57   0.000     .0070039    .0095923
+   dTreasury |   -.015369   .0036959    -4.16   0.000    -.0226149   -.0081232
+ dln_USINDEX |   -1.56107   .0443095   -35.23   0.000    -1.647939     -1.4742
+          M2 |  -.0023486   .0003748    -6.27   0.000    -.0030834   -.0016137
+ 1.recession |  -.0145692   .0028577    -5.10   0.000    -.0201718   -.0089665
+      1.post |  -.0020596   .0014005    -1.47   0.141    -.0048054    .0006861
+       _cons |   .0014225   .0026214     0.54   0.587    -.0037168    .0065618
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. reg dln_gold ret_sp_vol dTreasury dln_USINDEX M2 i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(6, 4315)      =    210.40
+       Model |  2.21832855         6  .369721425   Prob > F        =    0.0000
+    Residual |  7.58246087     4,315  .001757233   R-squared       =    0.2263
+-------------+----------------------------------   Adj R-squared   =    0.2253
+       Total |  9.80078942     4,321  .002268176   Root MSE        =    .04192
+
+------------------------------------------------------------------------------
+    dln_gold | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+  ret_sp_vol |   .0093307   .0013327     7.00   0.000     .0067179    .0119434
+   dTreasury |   -.022063   .0036852    -5.99   0.000    -.0292879   -.0148381
+ dln_USINDEX |  -1.479858   .0441654   -33.51   0.000    -1.566445   -1.393271
+          M2 |    -.00189   .0003837    -4.93   0.000    -.0026422   -.0011378
+ 1.recession |   -.009306   .0029531    -3.15   0.002    -.0150956   -.0035163
+      1.post |     -.0022   .0014285    -1.54   0.124    -.0050006    .0006005
+       _cons |    .008537   .0026064     3.28   0.001      .003427     .013647
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. reg dln_oil VIX dTreasury dln_USINDEX M2
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(4, 4317)      =    276.60
+       Model |  8.70434153         4  2.17608538   Prob > F        =    0.0000
+    Residual |  33.9627685     4,317  .007867215   R-squared       =    0.2040
+-------------+----------------------------------   Adj R-squared   =    0.2033
+       Total |    42.66711     4,321   .00987436   Root MSE        =     .0887
+
+------------------------------------------------------------------------------
+     dln_oil | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         VIX |  -.0113225   .0012561    -9.01   0.000     -.013785   -.0088599
+   dTreasury |   .0335531   .0078441     4.28   0.000     .0181747    .0489315
+ dln_USINDEX |  -2.637263   .0933566   -28.25   0.000     -2.82029   -2.454237
+          M2 |    .002753   .0007998     3.44   0.001     .0011851     .004321
+       _cons |    .019739   .0050515     3.91   0.000     .0098356    .0296425
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. reg dln_oil VIX dTreasury dln_USINDEX M2 i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(6, 4315)      =    187.33
+       Model |  8.81739558         6  1.46956593   Prob > F        =    0.0000
+    Residual |  33.8497144     4,315  .007844662   R-squared       =    0.2067
+-------------+----------------------------------   Adj R-squared   =    0.2056
+       Total |    42.66711     4,321   .00987436   Root MSE        =    .08857
+
+------------------------------------------------------------------------------
+     dln_oil | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         VIX |  -.0129672   .0014121    -9.18   0.000    -.0157357   -.0101988
+   dTreasury |    .034093   .0079059     4.31   0.000     .0185934    .0495926
+ dln_USINDEX |  -2.578157   .0947821   -27.20   0.000    -2.763979   -2.392335
+          M2 |   .0028562   .0008018     3.56   0.000     .0012842    .0044282
+ 1.recession |    .004975    .006113     0.81   0.416    -.0070096    .0169595
+      1.post |  -.0098578   .0029958    -3.29   0.001    -.0157312   -.0039844
+       _cons |   .0289572   .0056074     5.16   0.000     .0179637    .0399507
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. reg dln_oil ret_sp_vol dTreasury dln_USINDEX M2 i.recession i.post
+
+      Source |       SS           df       MS      Number of obs   =     4,322
+-------------+----------------------------------   F(6, 4315)      =    193.44
+       Model |  9.04387725         6  1.50731288   Prob > F        =    0.0000
+    Residual |  33.6232328     4,315  .007792174   R-squared       =    0.2120
+-------------+----------------------------------   Adj R-squared   =    0.2109
+       Total |    42.66711     4,321   .00987436   Root MSE        =    .08827
+
+------------------------------------------------------------------------------
+     dln_oil | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+  ret_sp_vol |  -.0299585   .0028063   -10.68   0.000    -.0354604   -.0244567
+   dTreasury |   .0383159   .0077603     4.94   0.000     .0231017      .05353
+ dln_USINDEX |   -2.62913    .093003   -28.27   0.000    -2.811463   -2.446796
+          M2 |   .0034991    .000808     4.33   0.000     .0019151    .0050831
+ 1.recession |   .0117402   .0062187     1.89   0.059    -.0004516    .0239319
+      1.post |  -.0121765    .003008    -4.05   0.000    -.0180738   -.0062792
+       _cons |   .0300289   .0054886     5.47   0.000     .0192684    .0407895
+------------------------------------------------------------------------------
+
+. outreg2 using SafeHaven,tex
+SafeHaven.tex
+dir : seeout
+
+. 
+. //Single cutoff Regression Discontinuity (use the recession days as discontinui
+> ty)
+. drop if recession == 1
+(362 observations deleted)
+
+. savesome Date DateNum GS_dln_gold_dln_sp OS_dln_oil_dln_sp using RDData,replace
+(file RDData.dta not found)
+file RDData.dta saved
+
+. replace tick = _n
+(3,961 real changes made)
+
+. rdplot GS_dln_gold_dln_sp tick,c(1413.5) mbw(1400)
+
+RD Plot with evenly spaced mimicking variance number of bins using spacings estim
+> ators.
+
+    Cutoff c = 1413.5 | Left of c  Right of c        Number of obs  =       3959
+----------------------+----------------------        Kernel         =    Uniform
+        Number of obs |      1411        2548
+   Eff. Number of obs |      1411        2548
+  Order poly. fit (p) |         4           4
+     BW poly. fit (h) |  1410.500    2547.500
+ Number of bins scale |     1.000       1.000
+
+Outcome: GS_dln_gold_dln_sp. Running variable: tick.
+---------------------------------------------
+                      | Left of c  Right of c
+----------------------+----------------------
+        Bins selected |      5217        8015
+   Average bin length |     0.270       0.318
+    Median bin length |     0.270       0.318
+----------------------+----------------------
+    IMSE-optimal bins |        93          85
+  Mimicking Var. bins |      5217        8015
+----------------------+----------------------
+Rel. to IMSE-optimal: | 
+        Implied scale |    56.097      94.294
+    WIMSE var. weight |     0.000       0.000
+    WIMSE bias weight |     1.000       1.000
+---------------------------------------------
+
+
+. graph rename Graph g1,replace
+
+. rdplot OS_dln_oil_dln_sp tick,c(1413.5) mbw(1400)
+
+RD Plot with evenly spaced mimicking variance number of bins using spacings estim
+> ators.
+
+    Cutoff c = 1413.5 | Left of c  Right of c        Number of obs  =       3959
+----------------------+----------------------        Kernel         =    Uniform
+        Number of obs |      1411        2548
+   Eff. Number of obs |      1411        2548
+  Order poly. fit (p) |         4           4
+     BW poly. fit (h) |  1410.500    2547.500
+ Number of bins scale |     1.000       1.000
+
+Outcome: OS_dln_oil_dln_sp. Running variable: tick.
+---------------------------------------------
+                      | Left of c  Right of c
+----------------------+----------------------
+        Bins selected |      3140        5420
+   Average bin length |     0.449       0.470
+    Median bin length |     0.449       0.470
+----------------------+----------------------
+    IMSE-optimal bins |        72          65
+  Mimicking Var. bins |      3140        5420
+----------------------+----------------------
+Rel. to IMSE-optimal: | 
+        Implied scale |    43.611      83.385
+    WIMSE var. weight |     0.000       0.000
+    WIMSE bias weight |     1.000       1.000
+---------------------------------------------
+
+
+. graph rename Graph g2,replace
+
+. graph combine g1 g2,col(2) xsize(20) ysize(6.5) title("One Month")
+
+. graph save GraphsOM,replace
+(file GraphsOM.gph not found)
+file GraphsOM.gph saved
+
+. graph export Graphs9.png,height (1200) replace
+(file Graphs9.png not found)
+file Graphs9.png saved as PNG format
+
+. 
+. //Multi cutoff Regression Discontinuity (use euro sovereign crisis as the other
+>  discontinuity)
+. drop if euro == 1
+(645 observations deleted)
+
+. savesome Date DateNum GS_dln_gold_dln_sp OS_dln_oil_dln_sp using RDMCData,repla
+> ce
+(file RDMCData.dta not found)
+file RDMCData.dta saved
+
+. replace tick = _n
+(1,685 real changes made)
+
+. gen c = 1413.5
+
+. replace c = 1631.5 if tick >= 1526
+(1,791 real changes made)
+
+. 
+. rdplot GS_dln_gold_dln_sp tick,c(1413.5) mbw(1400)
+
+RD Plot with evenly spaced mimicking variance number of bins using spacings estim
+> ators.
+
+    Cutoff c = 1413.5 | Left of c  Right of c        Number of obs  =       3314
+----------------------+----------------------        Kernel         =    Uniform
+        Number of obs |      1411        1903
+   Eff. Number of obs |      1411        1903
+  Order poly. fit (p) |         4           4
+     BW poly. fit (h) |  1410.500    1902.500
+ Number of bins scale |     1.000       1.000
+
+Outcome: GS_dln_gold_dln_sp. Running variable: tick.
+---------------------------------------------
+                      | Left of c  Right of c
+----------------------+----------------------
+        Bins selected |      4561        8026
+   Average bin length |     0.309       0.237
+    Median bin length |     0.309       0.237
+----------------------+----------------------
+    IMSE-optimal bins |        93         123
+  Mimicking Var. bins |      4561        8026
+----------------------+----------------------
+Rel. to IMSE-optimal: | 
+        Implied scale |    49.043      65.252
+    WIMSE var. weight |     0.000       0.000
+    WIMSE bias weight |     1.000       1.000
+---------------------------------------------
+
+
+. graph rename Graph g1,replace
+
+. rdplot OS_dln_oil_dln_sp tick,c(1413.5) mbw(1400)
+
+RD Plot with evenly spaced mimicking variance number of bins using spacings estim
+> ators.
+
+    Cutoff c = 1413.5 | Left of c  Right of c        Number of obs  =       3314
+----------------------+----------------------        Kernel         =    Uniform
+        Number of obs |      1411        1903
+   Eff. Number of obs |      1411        1903
+  Order poly. fit (p) |         4           4
+     BW poly. fit (h) |  1410.500    1902.500
+ Number of bins scale |     1.000       1.000
+
+Outcome: OS_dln_oil_dln_sp. Running variable: tick.
+---------------------------------------------
+                      | Left of c  Right of c
+----------------------+----------------------
+        Bins selected |      2745        3194
+   Average bin length |     0.514       0.596
+    Median bin length |     0.514       0.596
+----------------------+----------------------
+    IMSE-optimal bins |        72          95
+  Mimicking Var. bins |      2745        3194
+----------------------+----------------------
+Rel. to IMSE-optimal: | 
+        Implied scale |    38.125      33.621
+    WIMSE var. weight |     0.000       0.000
+    WIMSE bias weight |     1.000       1.000
+---------------------------------------------
+
+
+. graph rename Graph g2,replace
+
+. graph combine g1 g2,col(2) xsize(20) ysize(6.5)
+
+. graph export Graphs10.png,height (1200) replace
+(file Graphs10.png not found)
+file Graphs10.png saved as PNG format
+
+. 
+. rdmc GS_dln_gold_dln_sp tick,cvar(c)
+
+
+Cutoff-specific RD estimation with robust bias-corrected inference
+--------------------------------------------------------------------------------
+      Cutoff|    Coef.    P>|z|  [95% Conf. Int.]     hl     hr      Nh   Weight
+------------+-------------------------------------------------------------------
+    1413.500|    0.144    0.00      0.15    0.17    26.90  26.90     54    0.466
+    1631.500|   -0.051    0.00     -0.07   -0.03    31.19  31.19     62    0.534
+------------+-------------------------------------------------------------------
+    Weighted|    0.040    0.00      0.03    0.06        .      .    116        .
+      Pooled|   -0.016    0.40     -0.09    0.04   178.11 178.11    574        .
+--------------------------------------------------------------------------------
+
+. rdmc OS_dln_oil_dln_sp tick,cvar(c)
+
+
+Cutoff-specific RD estimation with robust bias-corrected inference
+--------------------------------------------------------------------------------
+      Cutoff|    Coef.    P>|z|  [95% Conf. Int.]     hl     hr      Nh   Weight
+------------+-------------------------------------------------------------------
+    1413.500|    0.549    0.00      0.54    0.57    41.47  41.47     82    0.577
+    1631.500|   -0.185    0.00     -0.19   -0.17    29.53  29.53     60    0.423
+------------+-------------------------------------------------------------------
+    Weighted|    0.239    0.00      0.23    0.25        .      .    142        .
+      Pooled|    0.085    0.11     -0.02    0.15   138.72 138.72    496        .
+--------------------------------------------------------------------------------
+
+. 
+. rdmcplot GS_dln_gold_dln_sp tick,cvar(c)
+
+. graph rename Graph g3,replace
+
+. rdmcplot OS_dln_oil_dln_sp tick,cvar(c)
+
+. graph rename Graph g4,replace
+
+. graph combine g3 g4,col(2) xsize(20) ysize(6.5)
+
+. graph export Graphs11.png,height(1200) replace
+(file Graphs11.png not found)
+file Graphs11.png saved as PNG format
+
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\yutao\OneDrive\Desktop\Code_Sample_Yutao\Regression Main\Re
+> sult.log
+  log type:  text
+ closed on:   9 May 2024, 03:10:26
+---------------------------------------------------------------------------------
